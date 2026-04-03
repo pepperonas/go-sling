@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0f14">
+    <title>go-sling — LAN File Transfer</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link rel="stylesheet" href="/css/style.css">
+    <meta name="description" content="Fast peer-to-peer file transfer over your local network">
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="login-screen" class="login-screen" style="display:none">
+    <div class="login-card">
+        <div class="logo">🔗</div>
+        <h1>go-sling</h1>
+        <p class="subtitle">LAN File Transfer</p>
+        <form id="login-form">
+            <div class="input-group">
+                <input type="password" id="pin-input" placeholder="Enter PIN" autocomplete="off" required>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="remember-me">
+                <label for="remember-me">Remember me for 7 days</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Unlock</button>
+            <p id="login-error" class="login-error"></p>
+        </form>
+    </div>
+</div>
+
+<!-- Main App -->
+<div class="app">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <span class="header-logo">🔗</span>
+            <h1>go-sling</h1>
+        </div>
+        <div class="header-right">
+            <div class="peer-count">
+                <span class="dot"></span>
+                <span><span id="peer-count-num">0</span> peers</span>
+            </div>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle theme">☀️</button>
+        </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" data-tab="send">Send (P2P)</div>
+        <div class="tab" data-tab="files">Files (Server)</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+        <div class="content">
+            <!-- Send Tab -->
+            <div id="tab-send" class="tab-content active">
+                <div class="drop-zone" id="drop-zone-send">
+                    <div class="drop-zone-icon">📤</div>
+                    <div class="drop-zone-text">Drop files or folders here, or click to browse</div>
+                    <div class="drop-zone-hint">Files are sent directly to the other device via P2P</div>
+                    <input type="file" id="file-input-send" multiple>
+                </div>
+
+                <div class="staged-files" id="staged-files">
+                    <div class="staged-header">
+                        <h3><span id="staged-count">0 files</span> — <span id="staged-total">0 B</span></h3>
+                        <button class="btn-icon" id="btn-clear-staged" title="Clear all">✕</button>
+                    </div>
+                    <ul class="staged-list" id="staged-list"></ul>
+                    <div class="send-actions">
+                        <select id="target-peer">
+                            <option value="">No peers available</option>
+                        </select>
+                        <button class="btn btn-primary" id="btn-send-p2p">Send</button>
+                    </div>
+                </div>
+
+                <ul class="transfers" id="transfers"></ul>
+            </div>
+
+            <!-- Files Tab -->
+            <div id="tab-files" class="tab-content">
+                <div class="drop-zone" id="drop-zone-files">
+                    <div class="drop-zone-icon">☁️</div>
+                    <div class="drop-zone-text">Drop files to upload to the server</div>
+                    <div class="drop-zone-hint">Files are stored on the server for other devices to download</div>
+                    <input type="file" id="file-input-files" multiple>
+                </div>
+
+                <div class="files-grid" id="files-list">
+                    <div class="empty-state">
+                        <div class="empty-icon">📂</div>
+                        <p>No files uploaded yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Section -->
+            <div class="status-section">
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-value" id="status-uptime">--</div>
+                        <div class="status-label">Uptime</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="status-peers">0</div>
+                        <div class="status-label">Peers</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="status-files">0</div>
+                        <div class="status-label">Files</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="status-storage">0 B</div>
+                        <div class="status-label">Storage</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="status-memory">0 B</div>
+                        <div class="status-label">Memory</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-card">
+                <h3>Online Peers</h3>
+                <ul class="peer-list" id="peer-list">
+                    <li class="no-peers">Connecting...</li>
+                </ul>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        &copy; 2026 Martin Pfeffer | <a href="https://celox.io" target="_blank" rel="noopener">celox.io</a>
+    </footer>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+        <h2>Confirm</h2>
+        <p>Are you sure?</p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-danger">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="/js/utils.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/ws.js"></script>
+<script src="/js/webrtc.js"></script>
+<script src="/js/transfer.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

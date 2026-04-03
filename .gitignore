@@ -1,0 +1,8 @@
+bin/
+data/
+config.yaml
+certs/
+*.exe
+*.test
+*.out
+.DS_Store
