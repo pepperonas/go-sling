@@ -23,4 +23,4 @@ clients/android/local.properties
 # Distribution
 dist/macos/gosling-client.py
 dist/*.zip
-*.apk
+clients/python/venv/
