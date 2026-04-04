@@ -238,7 +238,13 @@ const App = {
     async sendViaRelay(peerId, files) {
         const formData = new FormData();
         const fileList = Array.isArray(files) ? files : Array.from(files);
-        fileList.forEach(f => formData.append('files', f, f.webkitRelativePath || f.name));
+        const paths = [];
+        fileList.forEach(f => {
+            const relPath = f.webkitRelativePath || f.name;
+            paths.push(relPath);
+            formData.append('files', f, relPath);
+        });
+        formData.append('paths', JSON.stringify(paths));
 
         const peerName = WS.peers.find(p => p.id === peerId)?.name || peerId;
         UI.toast('Sending ' + fileList.length + ' file(s) to ' + peerName + ' via relay...', 'info');

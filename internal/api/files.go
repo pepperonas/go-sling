@@ -114,15 +114,28 @@ func (h *FileHandler) SendTo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Read explicit paths (preserves directory structure from browser)
+	var paths []string
+	if pathsJSON := r.FormValue("paths"); pathsJSON != "" {
+		json.Unmarshal([]byte(pathsJSON), &paths)
+	}
+
 	var uploaded []*storage.FileInfo
+	idx := 0
 	for _, fileHeaders := range r.MultipartForm.File {
 		for _, fh := range fileHeaders {
 			f, err := fh.Open()
 			if err != nil {
 				log.Printf("Error opening uploaded file: %v", err)
+				idx++
 				continue
 			}
-			info, err := h.store.Save(fh.Filename, f, fh.Size)
+			name := fh.Filename
+			if idx < len(paths) && paths[idx] != "" {
+				name = paths[idx]
+			}
+			log.Printf("SendTo: file %q (size=%d)", name, fh.Size)
+			info, err := h.store.Save(name, f, fh.Size)
 			f.Close()
 			if err != nil {
 				log.Printf("Error saving file: %v", err)
@@ -130,6 +143,7 @@ func (h *FileHandler) SendTo(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			uploaded = append(uploaded, info)
+			idx++
 		}
 	}
 
