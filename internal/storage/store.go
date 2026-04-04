@@ -93,6 +93,9 @@ func (s *Store) Save(name string, reader io.Reader, size int64) (*FileInfo, erro
 	}
 
 	filePath := filepath.Join(dirPath, name)
+	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		return nil, err
+	}
 	f, err := os.Create(filePath)
 	if err != nil {
 		return nil, err

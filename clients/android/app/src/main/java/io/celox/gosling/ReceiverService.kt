@@ -220,6 +220,7 @@ class ReceiverService : Service() {
             outputDir.mkdirs()
 
             val file = File(outputDir, fileName)
+            file.parentFile?.mkdirs()
             var size = 0L
 
             conn.inputStream.use { input ->
