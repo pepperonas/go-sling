@@ -17,12 +17,14 @@ const WS = {
 
         this.socket.onopen = () => {
             this.reconnectDelay = 1000;
-            // Send join message with browser info
+            const device = detectDevice();
+            // Send join message with device info and a device-specific name
             this.send({
                 type: 'join',
                 payload: {
+                    name: generateDeviceName(device),
                     browser: detectBrowser(),
-                    os: detectOS(),
+                    os: device,
                 }
             });
         };

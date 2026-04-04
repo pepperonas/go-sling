@@ -53,33 +53,105 @@ function getFileIcon(name, isDir) {
     return icons[ext] || '📄';
 }
 
-function getOSIcon(os) {
-    if (!os) return '💻';
-    const lower = os.toLowerCase();
-    if (lower.includes('mac') || lower.includes('ios')) return '🍎';
-    if (lower.includes('windows')) return '🪟';
-    if (lower.includes('linux')) return '🐧';
-    if (lower.includes('android')) return '🤖';
+function getDeviceIcon(device) {
+    if (!device) return '💻';
+    const d = device.toLowerCase();
+    if (d.includes('iphone')) return '📱';
+    if (d.includes('ipad')) return '📲';
+    if (d.includes('android phone')) return '📱';
+    if (d.includes('android tablet')) return '📲';
+    if (d.includes('macbook')) return '💻';
+    if (d.includes('imac') || d.includes('mac desktop')) return '🖥️';
+    if (d.includes('windows laptop')) return '💻';
+    if (d.includes('windows desktop')) return '🖥️';
+    if (d.includes('linux')) return '🐧';
+    if (d.includes('raspi') || d.includes('raspberry')) return '🍓';
     return '💻';
+}
+
+// Keep for backward compat in peer avatar
+function getOSIcon(os) {
+    return getDeviceIcon(os);
 }
 
 function detectBrowser() {
     const ua = navigator.userAgent;
     if (ua.includes('Firefox')) return 'Firefox';
     if (ua.includes('Edg')) return 'Edge';
+    if (ua.includes('OPR') || ua.includes('Opera')) return 'Opera';
+    if (ua.includes('Brave')) return 'Brave';
     if (ua.includes('Chrome')) return 'Chrome';
     if (ua.includes('Safari')) return 'Safari';
     return 'Browser';
 }
 
-function detectOS() {
+function detectDevice() {
     const ua = navigator.userAgent;
-    if (ua.includes('Mac')) return 'macOS';
-    if (ua.includes('Windows')) return 'Windows';
-    if (ua.includes('Linux')) return 'Linux';
-    if (ua.includes('Android')) return 'Android';
-    if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+
+    // Mobile devices
+    if (/iPhone/.test(ua)) return 'iPhone';
+    if (/iPad/.test(ua)) return 'iPad';
+    if (/Android/.test(ua)) {
+        return /Mobile/.test(ua) ? 'Android Phone' : 'Android Tablet';
+    }
+
+    // Desktop
+    if (/Macintosh/.test(ua)) {
+        // Check for MacBook vs iMac via screen size heuristic
+        const w = screen.width;
+        return w <= 1680 ? 'MacBook' : 'Mac Desktop';
+    }
+    if (/Windows/.test(ua)) {
+        // Laptops tend to have touch or smaller screens
+        const hasTouch = navigator.maxTouchPoints > 0;
+        return hasTouch ? 'Windows Laptop' : 'Windows Desktop';
+    }
+    if (/Linux/.test(ua)) {
+        if (/Raspberry/.test(ua)) return 'Raspberry Pi';
+        return 'Linux';
+    }
+
     return 'Unknown';
+}
+
+function detectOS() {
+    return detectDevice();
+}
+
+// Creative name parts by device type
+const _deviceAdjectives = {
+    'iPhone':          ['Zippy', 'Swift', 'Nimble', 'Sleek', 'Spark'],
+    'iPad':            ['Mighty', 'Grand', 'Bright', 'Vivid', 'Prime'],
+    'Android Phone':   ['Turbo', 'Flash', 'Blitz', 'Rapid', 'Bolt'],
+    'Android Tablet':  ['Atlas', 'Titan', 'Nova', 'Orbit', 'Cosmo'],
+    'MacBook':         ['Lunar', 'Stellar', 'Cosmic', 'Nebula', 'Astro'],
+    'Mac Desktop':     ['Thunder', 'Storm', 'Forge', 'Titan', 'Peak'],
+    'Windows Laptop':  ['Pixel', 'Cyber', 'Neon', 'Prism', 'Volt'],
+    'Windows Desktop': ['Granite', 'Steel', 'Iron', 'Chrome', 'Apex'],
+    'Linux':           ['Kernel', 'Root', 'Daemon', 'Cron', 'Shell'],
+    'Raspberry Pi':    ['Berry', 'Tiny', 'Micro', 'Nano', 'Pico'],
+};
+
+const _deviceNouns = {
+    'iPhone':          ['Pocket', 'Dart', 'Comet', 'Arrow', 'Flare'],
+    'iPad':            ['Canvas', 'Shield', 'Slate', 'Prism', 'Deck'],
+    'Android Phone':   ['Droid', 'Spark', 'Pulse', 'Wave', 'Beam'],
+    'Android Tablet':  ['Pad', 'Grid', 'Pane', 'Slab', 'Matrix'],
+    'MacBook':         ['Book', 'Wing', 'Rider', 'Craft', 'Glider'],
+    'Mac Desktop':     ['Tower', 'Hub', 'Core', 'Base', 'Vault'],
+    'Windows Laptop':  ['Flip', 'Node', 'Link', 'Gate', 'Port'],
+    'Windows Desktop': ['Rig', 'Desk', 'Mill', 'Bunker', 'Forge'],
+    'Linux':           ['Box', 'Node', 'Stack', 'Lab', 'Den'],
+    'Raspberry Pi':    ['Pi', 'Chip', 'Dot', 'Seed', 'Bit'],
+};
+
+function generateDeviceName(device) {
+    const adjs = _deviceAdjectives[device] || ['Smart', 'Cool', 'Fast', 'Bold', 'Keen'];
+    const nouns = _deviceNouns[device] || ['Device', 'Node', 'Unit', 'Peer', 'Link'];
+    const a = adjs[Math.floor(Math.random() * adjs.length)];
+    const n = nouns[Math.floor(Math.random() * nouns.length)];
+    const suffix = Math.random().toString(36).substring(2, 5);
+    return a + '-' + n + '-' + suffix;
 }
 
 function generateChecksum(data) {

@@ -147,9 +147,15 @@ const Transfer = {
     },
 
     async _computeChecksum(file) {
-        const buffer = await file.arrayBuffer();
-        const hash = await crypto.subtle.digest('SHA-256', buffer);
-        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        // crypto.subtle is only available over HTTPS/localhost
+        if (!crypto.subtle) return '';
+        try {
+            const buffer = await file.arrayBuffer();
+            const hash = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch {
+            return '';
+        }
     },
 
     // Receiving side
@@ -174,7 +180,8 @@ const Transfer = {
     },
 
     _handleControlMessage(peerId, msg) {
-        switch (msg.type) {
+        const type = Number(msg.type);
+        switch (type) {
             case MSG_FILE_META: {
                 if (!this.activeReceives[peerId]) {
                     const peerName = WS.peers.find(p => p.id === peerId)?.name || peerId;
@@ -217,8 +224,8 @@ const Transfer = {
                 // Assemble file
                 const blob = new Blob(file.chunks);
 
-                // Verify checksum for small files (< 100MB)
-                if (blob.size < 100 * 1024 * 1024 && msg.checksum) {
+                // Verify checksum for small files (< 100MB), only if crypto.subtle available (HTTPS)
+                if (crypto.subtle && blob.size < 100 * 1024 * 1024 && msg.checksum) {
                     blob.arrayBuffer().then(buf => {
                         crypto.subtle.digest('SHA-256', buf).then(hash => {
                             const checksum = Array.from(new Uint8Array(hash))
@@ -227,11 +234,12 @@ const Transfer = {
                                 UI.toast('Checksum mismatch for ' + file.name, 'warning');
                             }
                         });
-                    });
+                    }).catch(() => {});
                 }
 
-                // Auto-download
-                this._downloadBlob(blob, file.name);
+                // Store blob for ZIP bundling at transfer end
+                if (!rx.completedFiles) rx.completedFiles = [];
+                rx.completedFiles.push({ name: file.name, blob });
                 break;
             }
 
@@ -239,7 +247,7 @@ const Transfer = {
                 const rx = this.activeReceives[peerId];
                 if (rx) {
                     UI.completeTransfer(rx.transferId);
-                    UI.toast('Received all files!', 'success');
+                    this._bundleAndOffer(rx);
                     UI.notify('go-sling', 'File transfer received');
                     delete this.activeReceives[peerId];
                 }
@@ -275,15 +283,78 @@ const Transfer = {
         UI.updateTransfer(rx.transferId, percent, speed, remaining);
     },
 
-    _downloadBlob(blob, name) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = name.split('/').pop(); // Use just filename, not path
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    async _bundleAndOffer(rx) {
+        const files = rx.completedFiles || [];
+        if (files.length === 0) return;
+
+        const container = document.getElementById('transfers');
+        const item = document.createElement('div');
+        item.className = 'transfer-item';
+        item.style.borderLeft = '3px solid var(--success)';
+
+        const header = document.createElement('div');
+        header.className = 'transfer-header';
+
+        if (files.length === 1) {
+            const f = files[0];
+            const url = URL.createObjectURL(f.blob);
+            const fileName = f.name.split('/').pop();
+
+            const label = document.createElement('span');
+            label.className = 'transfer-name';
+            label.textContent = '✅ ' + fileName + ' (' + formatBytes(f.blob.size) + ')';
+            header.appendChild(label);
+            item.appendChild(header);
+
+            const btn = document.createElement('a');
+            btn.href = url;
+            btn.download = fileName;
+            btn.className = 'btn btn-primary';
+            btn.style.cssText = 'margin-top:8px;display:inline-flex;text-decoration:none';
+            btn.textContent = '💾 Save File';
+            item.appendChild(btn);
+
+            container.insertBefore(item, container.firstChild);
+            UI.toast('File ready — tap Save', 'success', 6000);
+        } else {
+            const label = document.createElement('span');
+            label.className = 'transfer-name';
+            label.textContent = '✅ ' + files.length + ' files received from ' + rx.peerName;
+            header.appendChild(label);
+            item.appendChild(header);
+
+            const status = document.createElement('div');
+            status.textContent = 'Creating ZIP...';
+            status.style.cssText = 'font-size:13px;color:var(--text-secondary);margin-top:8px';
+            item.appendChild(status);
+            container.insertBefore(item, container.firstChild);
+
+            const zipFiles = [];
+            for (const f of files) {
+                const buf = await f.blob.arrayBuffer();
+                zipFiles.push({ name: f.name, data: new Uint8Array(buf) });
+            }
+
+            const zipBlob = ZipBuilder.create(zipFiles);
+            const url = URL.createObjectURL(zipBlob);
+
+            // Derive ZIP name from common directory prefix
+            const firstPath = files[0].name;
+            const rootDir = firstPath.includes('/') ? firstPath.split('/')[0] : 'transfer';
+            const zipName = rootDir + '.zip';
+
+            status.textContent = files.length + ' files — ' + formatBytes(zipBlob.size);
+
+            const btn = document.createElement('a');
+            btn.href = url;
+            btn.download = zipName;
+            btn.className = 'btn btn-primary';
+            btn.style.cssText = 'margin-top:8px;display:inline-flex;text-decoration:none';
+            btn.textContent = '💾 Save ZIP (' + formatBytes(zipBlob.size) + ')';
+            item.appendChild(btn);
+
+            UI.toast(files.length + ' files ready — tap Save ZIP', 'success', 6000);
+        }
     },
 
     cancelTransfer(transferId) {

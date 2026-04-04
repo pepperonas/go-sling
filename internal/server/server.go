@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"log"
@@ -24,7 +25,7 @@ type Server struct {
 func New(cfg *config.Config, webFS fs.FS) *Server {
 	return &Server{
 		cfg:     cfg,
-		auth:    NewAuthManager(cfg.Auth.Pin),
+		auth:    NewAuthManager(cfg.Auth.Pin, cfg.Storage.DataDir),
 		mux:     http.NewServeMux(),
 		webFS:   webFS,
 		startAt: time.Now(),
@@ -116,6 +117,14 @@ type responseWriter struct {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.status = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+// Implement http.Hijacker so WebSocket upgrades work through the logging middleware
+func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := rw.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, fmt.Errorf("underlying ResponseWriter does not implement http.Hijacker")
 }
 
 func printBanner(addr string) {

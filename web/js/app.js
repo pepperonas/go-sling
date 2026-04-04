@@ -55,8 +55,15 @@ const App = {
 
     setupTabs() {
         document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => UI.switchTab(tab.dataset.tab));
+            tab.addEventListener('click', () => {
+                UI.switchTab(tab.dataset.tab);
+                localStorage.setItem('gosling-tab', tab.dataset.tab);
+            });
         });
+
+        // Restore saved tab
+        const saved = localStorage.getItem('gosling-tab');
+        if (saved) UI.switchTab(saved);
     },
 
     setupDropZone() {
@@ -176,6 +183,13 @@ const App = {
         this.stagedFiles.push(...fileList);
         UI.renderStagedFiles(this.stagedFiles);
         UI.toast(fileList.length + ' file(s) staged for P2P transfer', 'info');
+
+        // Auto-select first available peer
+        const select = document.getElementById('target-peer');
+        if (!select.value) {
+            const firstPeer = select.querySelector('option[value]:not([value=""])');
+            if (firstPeer) select.value = firstPeer.value;
+        }
     },
 
     removeStagedFile(index) {

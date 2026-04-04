@@ -83,7 +83,7 @@ const UI = {
 
         const avatar = document.createElement('div');
         avatar.className = 'peer-avatar';
-        avatar.textContent = getOSIcon(p.os);
+        avatar.textContent = getDeviceIcon(p.os);
 
         const info = document.createElement('div');
         info.className = 'peer-info';
@@ -94,7 +94,7 @@ const UI = {
 
         const meta = document.createElement('div');
         meta.className = 'peer-meta';
-        meta.textContent = (p.browser || '') + ' · ' + (p.os || '');
+        meta.textContent = (p.os || 'Unknown') + ' · ' + (p.browser || '');
 
         info.appendChild(name);
         info.appendChild(meta);
@@ -140,7 +140,7 @@ const UI = {
             otherPeers.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
-                opt.textContent = p.name;
+                opt.textContent = getDeviceIcon(p.os) + ' ' + p.name + ' (' + (p.os || 'Unknown') + ')';
                 select.appendChild(opt);
             });
         }

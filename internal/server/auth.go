@@ -5,22 +5,56 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
 
 type AuthManager struct {
 	pin      string
+	dataDir  string
 	sessions map[string]time.Time
 	attempts map[string][]time.Time
 	mu       sync.RWMutex
 }
 
-func NewAuthManager(pin string) *AuthManager {
-	return &AuthManager{
+func NewAuthManager(pin string, dataDir string) *AuthManager {
+	a := &AuthManager{
 		pin:      pin,
+		dataDir:  dataDir,
 		sessions: make(map[string]time.Time),
 		attempts: make(map[string][]time.Time),
+	}
+	a.loadSessions()
+	return a
+}
+
+func (a *AuthManager) sessionsPath() string {
+	return filepath.Join(a.dataDir, ".sessions.json")
+}
+
+func (a *AuthManager) saveSessions() {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	data, _ := json.Marshal(a.sessions)
+	os.MkdirAll(a.dataDir, 0755)
+	os.WriteFile(a.sessionsPath(), data, 0600)
+}
+
+func (a *AuthManager) loadSessions() {
+	data, err := os.ReadFile(a.sessionsPath())
+	if err != nil {
+		return
+	}
+	json.Unmarshal(data, &a.sessions)
+	// Prune expired
+	now := time.Now()
+	for token, expiry := range a.sessions {
+		if now.After(expiry) {
+			delete(a.sessions, token)
+		}
 	}
 }
 
@@ -35,15 +69,16 @@ func (a *AuthManager) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Allow auth endpoint through
-		if r.URL.Path == "/api/auth" {
+		// Allow auth endpoints through
+		if r.URL.Path == "/api/auth" || r.URL.Path == "/api/auth/status" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// Allow static assets through
-		if r.URL.Path == "/" || r.URL.Path == "/index.html" ||
-			len(r.URL.Path) > 4 && (r.URL.Path[:4] == "/css" || r.URL.Path[:3] == "/js" || r.URL.Path[:7] == "/assets") {
+		// Allow static assets and WebSocket through (auth checked via cookie after WS upgrade)
+		p := r.URL.Path
+		if p == "/" || p == "/index.html" || p == "/ws" ||
+			strings.HasPrefix(p, "/css/") || strings.HasPrefix(p, "/js/") || strings.HasPrefix(p, "/assets/") {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -92,12 +127,13 @@ func (a *AuthManager) HandleAuth(w http.ResponseWriter, r *http.Request) {
 	token := generateToken()
 	expiry := 24 * time.Hour
 	if req.Remember {
-		expiry = 7 * 24 * time.Hour
+		expiry = 10 * 365 * 24 * time.Hour // forever
 	}
 
 	a.mu.Lock()
 	a.sessions[token] = time.Now().Add(expiry)
 	a.mu.Unlock()
+	a.saveSessions()
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "gosling_session",
@@ -105,7 +141,7 @@ func (a *AuthManager) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   int(expiry.Seconds()),
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
