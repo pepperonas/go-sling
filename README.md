@@ -53,7 +53,7 @@
 ### Core
 - **Peer-to-Peer transfers** — Files go directly between browsers via WebRTC DataChannel. The server only handles signaling. Zero server load during transfers.
 - **Relay/Upload mode** — Fallback when only one device is online. Upload to the server for others to download later. Re-uploading a file with the same name overwrites the existing one.
-- **Directory support** — Drag & drop entire folders. Directory structure is preserved 1:1 on the receiving end. Multiple files are automatically bundled into a ZIP named after the source folder (e.g., `Photos.zip`).
+- **Directory support** — Drag & drop entire folders. Directory structure is preserved 1:1 on all receiving ends (browser, Android app, Python CLI). Folders are displayed as a single entry (e.g., `📁 assets/ (4 files)`) instead of listing individual files. Hidden files (`.DS_Store`, `Thumbs.db`) are filtered automatically. Browser P2P bundles multiple files into a ZIP named after the source folder (e.g., `assets.zip`).
 - **No file size limits** — Transfer multi-GB files. Chunked transfer (64KB) with flow control.
 
 ### Clients & Platforms
@@ -107,7 +107,7 @@ On startup, go-sling prints the local URL and a QR code:
 
 ```
   ┌─────────────────────────────────────┐
-  │           go-sling v1.0.1            │
+  │           go-sling v1.0.2            │
   │       LAN File Transfer Server       │
   ├─────────────────────────────────────┤
   │  Local:   http://0.0.0.0:8420        │
@@ -170,7 +170,8 @@ All connected peers are shown in the sidebar with their icon, name, device type,
 
 **On headless clients (auto-receive):**
 - Files are saved automatically to the configured output directory.
-- Directory structure is preserved 1:1 (e.g., sending `Photos/` creates `Photos/img1.jpg`, `Photos/img2.jpg`).
+- Directory structure is preserved 1:1 end-to-end — sending `assets/` creates `assets/martin.jpg`, `assets/logo.png`, etc. on the receiver. The folder appears as a proper subdirectory (e.g., `Download/go-sling/assets/`), not as flat files.
+- Hidden files (`.DS_Store`, `Thumbs.db`, `desktop.ini`) are filtered out before transfer.
 - ZIP archives are auto-extracted and the archive file is removed.
 - A notification is shown for each received file (Android).
 
