@@ -231,6 +231,17 @@ const UI = {
         files.forEach(f => container.appendChild(this._createFileRow(f)));
     },
 
+    getStagedRootDir(files) {
+        // Find common root directory from relative paths
+        const paths = files.map(f => f.webkitRelativePath || f.name);
+        const firstParts = paths.map(p => p.split('/')[0]);
+        const first = firstParts[0];
+        if (first && paths[0].includes('/') && firstParts.every(p => p === first)) {
+            return first;
+        }
+        return null;
+    },
+
     renderStagedFiles(files) {
         const container = document.getElementById('staged-files');
         const list = document.getElementById('staged-list');
@@ -241,38 +252,78 @@ const UI = {
         }
 
         container.classList.add('has-files');
-        document.getElementById('staged-count').textContent = files.length + ' file' + (files.length !== 1 ? 's' : '');
 
-        list.innerHTML = '';
         let totalSize = 0;
-        files.forEach((f, i) => {
-            totalSize += f.size;
+        files.forEach(f => totalSize += f.size);
+
+        const rootDir = this.getStagedRootDir(files);
+
+        if (rootDir) {
+            // Folder view: show as single folder entry
+            document.getElementById('staged-count').textContent = '📁 ' + rootDir;
+
+            list.innerHTML = '';
             const li = document.createElement('li');
             li.className = 'staged-item';
 
             const icon = document.createElement('span');
             icon.className = 'file-icon';
-            icon.textContent = getFileIcon(f.name, false);
+            icon.textContent = '📁';
 
             const name = document.createElement('span');
-            name.textContent = f.webkitRelativePath || f.name;
+            name.textContent = rootDir + '/ (' + files.length + ' files)';
 
             const size = document.createElement('span');
             size.className = 'file-size';
-            size.textContent = formatBytes(f.size);
+            size.textContent = formatBytes(totalSize);
 
             const removeBtn = document.createElement('button');
             removeBtn.className = 'btn-icon';
-            removeBtn.title = 'Remove';
+            removeBtn.title = 'Clear';
             removeBtn.textContent = '✕';
-            removeBtn.addEventListener('click', () => App.removeStagedFile(i));
+            removeBtn.addEventListener('click', () => {
+                App.stagedFiles = [];
+                this.renderStagedFiles([]);
+            });
 
             li.appendChild(icon);
             li.appendChild(name);
             li.appendChild(size);
             li.appendChild(removeBtn);
             list.appendChild(li);
-        });
+        } else {
+            // Individual file view
+            document.getElementById('staged-count').textContent = files.length + ' file' + (files.length !== 1 ? 's' : '');
+
+            list.innerHTML = '';
+            files.forEach((f, i) => {
+                const li = document.createElement('li');
+                li.className = 'staged-item';
+
+                const icon = document.createElement('span');
+                icon.className = 'file-icon';
+                icon.textContent = getFileIcon(f.name, false);
+
+                const name = document.createElement('span');
+                name.textContent = f.webkitRelativePath || f.name;
+
+                const size = document.createElement('span');
+                size.className = 'file-size';
+                size.textContent = formatBytes(f.size);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn-icon';
+                removeBtn.title = 'Remove';
+                removeBtn.textContent = '✕';
+                removeBtn.addEventListener('click', () => App.removeStagedFile(i));
+
+                li.appendChild(icon);
+                li.appendChild(name);
+                li.appendChild(size);
+                li.appendChild(removeBtn);
+                list.appendChild(li);
+            });
+        }
 
         document.getElementById('staged-total').textContent = formatBytes(totalSize);
     },

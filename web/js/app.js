@@ -179,10 +179,20 @@ const App = {
     },
 
     stageFiles(files) {
-        const fileList = Array.from(files);
+        const fileList = Array.from(files).filter(f => {
+            const name = f.name || '';
+            return !name.startsWith('.') && name !== 'Thumbs.db' && name !== 'desktop.ini';
+        });
+        if (fileList.length === 0) return;
         this.stagedFiles.push(...fileList);
         UI.renderStagedFiles(this.stagedFiles);
-        UI.toast(fileList.length + ' file(s) staged for P2P transfer', 'info');
+
+        // Show folder name if all files share a common root
+        const rootDir = UI.getStagedRootDir(this.stagedFiles);
+        const label = rootDir
+            ? '📁 ' + rootDir + ' (' + fileList.length + ' files)'
+            : fileList.length + ' file(s) staged';
+        UI.toast(label, 'info');
 
         // Auto-select first available peer
         const select = document.getElementById('target-peer');
