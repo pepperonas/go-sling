@@ -2,7 +2,9 @@
 
 <div align="center">
 
-<h3>🔗 Fast peer-to-peer file transfer over your local network</h3>
+<img src="web/assets/banner.png" alt="go-sling banner" width="100%">
+
+<h3>Fast peer-to-peer file transfer over your local network</h3>
 
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
