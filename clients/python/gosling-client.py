@@ -238,7 +238,7 @@ class GoslingClient:
 
         while self.running:
             try:
-                async with websockets.connect(ws_url, extra_headers=extra_headers) as ws:
+                async with websockets.connect(ws_url, additional_headers=extra_headers) as ws:
                     self.log(f"Connected to {self.server} as '{self.name}'")
 
                     join_msg = json.dumps({
