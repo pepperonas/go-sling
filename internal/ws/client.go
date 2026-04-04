@@ -26,6 +26,7 @@ type Client struct {
 	Name     string
 	Browser  string
 	OS       string
+	Headless bool
 	JoinedAt time.Time
 }
 

@@ -10,6 +10,7 @@ type PeerInfo struct {
 	Name     string `json:"name"`
 	Browser  string `json:"browser,omitempty"`
 	OS       string `json:"os,omitempty"`
+	Headless bool   `json:"headless"`
 	JoinedAt int64  `json:"joinedAt"`
 }
 
@@ -36,7 +37,7 @@ func (c *Client) handleMessage(raw []byte) {
 
 	switch msg.Type {
 	case "join":
-		// Update client info from browser
+		// Update client info from browser or headless client
 		if name, ok := msg.Payload["name"].(string); ok && name != "" {
 			c.Name = name
 		}
@@ -45,6 +46,9 @@ func (c *Client) handleMessage(raw []byte) {
 		}
 		if osName, ok := msg.Payload["os"].(string); ok {
 			c.OS = osName
+		}
+		if headless, ok := msg.Payload["headless"].(bool); ok {
+			c.Headless = headless
 		}
 		c.hub.broadcastPeerList()
 

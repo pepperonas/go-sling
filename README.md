@@ -251,6 +251,72 @@ ui:
 
 Priority: CLI flags > environment variables > config file > defaults.
 
+## Headless Clients (Auto-Receive)
+
+go-sling includes companion clients that run in the background and **automatically receive files** — no manual download needed. Files are saved to a configured directory and ZIP archives are auto-extracted.
+
+### Python CLI (macOS / Windows / Linux)
+
+```bash
+cd clients/python
+pip install -r requirements.txt
+
+# Start receiving
+python gosling-client.py --server 192.168.178.103:8420 --pin 3001
+
+# Custom output directory
+python gosling-client.py -s 192.168.178.103:8420 -p 3001 -o ~/received-files
+
+# Custom name, no auto-extract
+python gosling-client.py -s 192.168.178.103:8420 -p 3001 --name my-laptop --no-extract
+```
+
+The client connects as a **headless peer** — it appears in the browser's peer list with an `[Auto]` tag. When you send files to it from the browser, they are relayed through the server and automatically saved.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--server`, `-s` | *(required)* | go-sling server address (host:port) |
+| `--pin`, `-p` | *(none)* | Authentication PIN |
+| `--output`, `-o` | `~/go-sling-received` | Download directory |
+| `--name`, `-n` | *(auto-generated)* | Custom peer name |
+| `--no-extract` | `false` | Don't auto-extract ZIP files |
+
+**Requirements:** Python 3.8+, `websockets` package (`pip install websockets`)
+
+### Android App
+
+The Android app (`clients/android/`) provides the same auto-receive functionality with a native UI:
+
+1. Open the project in **Android Studio**
+2. Build and install on your device
+3. Enter your server address and PIN
+4. Tap **Start Receiving**
+
+The app runs a foreground service that:
+- Connects as a headless peer via WebSocket
+- Auto-downloads files when they arrive
+- Extracts ZIP archives automatically
+- Shows notifications for each received file
+- Saves to `Download/go-sling/` on the device
+- Reconnects automatically on connection loss
+
+Settings (server, PIN, output folder) are persisted between app launches.
+
+### How Headless Transfer Works
+
+```
+Browser (Sender)              Server              Headless Client
+  │─── send files ──────────► │                        │
+  │    POST /api/send-to/id   │                        │
+  │                            │─── "file-ready" ─────►│  (WebSocket)
+  │                            │                        │
+  │                            │◄── GET /api/download ──│  (HTTP)
+  │                            │──── file data ────────►│
+  │                            │                        │── save + extract
+```
+
+The browser detects headless peers and automatically uses server relay instead of WebRTC. Files are temporarily stored on the server and downloaded by the client.
+
 ## Architecture
 
 ### Signaling Flow
@@ -319,9 +385,19 @@ go-sling/
 │   └── assets/
 │       ├── banner.png
 │       └── favicon.svg
-└── scripts/
-    ├── install-service.sh  # Systemd service installer
-    └── generate-cert.sh    # Self-signed TLS certificate generator
+├── scripts/
+│   ├── install-service.sh  # Systemd service installer
+│   └── generate-cert.sh    # Self-signed TLS certificate generator
+└── clients/
+    ├── python/
+    │   ├── gosling-client.py   # Cross-platform headless receiver
+    │   └── requirements.txt
+    └── android/                # Android Studio project
+        └── app/src/main/
+            ├── java/io/celox/gosling/
+            │   ├── MainActivity.kt
+            │   └── ReceiverService.kt
+            └── res/
 ```
 
 ## API Reference

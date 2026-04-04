@@ -98,6 +98,7 @@ func (h *Hub) broadcastPeerList() {
 			Name:     c.Name,
 			Browser:  c.Browser,
 			OS:       c.OS,
+			Headless: c.Headless,
 			JoinedAt: c.JoinedAt.Unix(),
 		})
 	}
@@ -130,4 +131,20 @@ func (h *Hub) sendTo(targetID string, data []byte) {
 		default:
 		}
 	}
+}
+
+func (h *Hub) IsHeadless(clientID string) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	client, ok := h.clients[clientID]
+	return ok && client.Headless
+}
+
+func (h *Hub) NotifyPeer(clientID string, msgType string, payload map[string]any) {
+	msg := SignalMessage{
+		Type:    msgType,
+		Payload: payload,
+	}
+	data, _ := json.Marshal(msg)
+	h.sendTo(clientID, data)
 }

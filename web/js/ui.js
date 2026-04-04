@@ -90,11 +90,12 @@ const UI = {
 
         const name = document.createElement('div');
         name.className = 'peer-name';
-        name.textContent = p.name + (p.id === myId ? ' (You)' : '');
+        const suffix = p.id === myId ? ' (You)' : p.headless ? ' (Auto)' : '';
+        name.textContent = p.name + suffix;
 
         const meta = document.createElement('div');
         meta.className = 'peer-meta';
-        meta.textContent = (p.os || 'Unknown') + ' · ' + (p.browser || '');
+        meta.textContent = (p.os || 'Unknown') + ' · ' + (p.headless ? 'Auto-Receive' : (p.browser || ''));
 
         info.appendChild(name);
         info.appendChild(meta);
@@ -140,7 +141,8 @@ const UI = {
             otherPeers.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
-                opt.textContent = getDeviceIcon(p.os) + ' ' + p.name + ' (' + (p.os || 'Unknown') + ')';
+                const autoTag = p.headless ? ' [Auto]' : '';
+                opt.textContent = getDeviceIcon(p.os) + ' ' + p.name + ' (' + (p.os || 'Unknown') + ')' + autoTag;
                 select.appendChild(opt);
             });
         }

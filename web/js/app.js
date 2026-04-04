@@ -209,13 +209,41 @@ const App = {
             return;
         }
 
-        try {
-            await Transfer.sendFiles(targetPeer, this.stagedFiles);
-            this.stagedFiles = [];
-            UI.renderStagedFiles(this.stagedFiles);
-        } catch (err) {
-            UI.toast('Transfer failed: ' + err.message, 'error');
+        // Check if target is a headless peer — use server relay instead of WebRTC
+        const peer = WS.peers.find(p => p.id === targetPeer);
+        if (peer && peer.headless) {
+            await this.sendViaRelay(targetPeer, this.stagedFiles);
+        } else {
+            try {
+                await Transfer.sendFiles(targetPeer, this.stagedFiles);
+            } catch (err) {
+                UI.toast('Transfer failed: ' + err.message, 'error');
+                return;
+            }
         }
+        this.stagedFiles = [];
+        UI.renderStagedFiles(this.stagedFiles);
+    },
+
+    async sendViaRelay(peerId, files) {
+        const formData = new FormData();
+        const fileList = Array.isArray(files) ? files : Array.from(files);
+        fileList.forEach(f => formData.append('files', f, f.webkitRelativePath || f.name));
+
+        const peerName = WS.peers.find(p => p.id === peerId)?.name || peerId;
+        UI.toast('Sending ' + fileList.length + ' file(s) to ' + peerName + ' via relay...', 'info');
+
+        const resp = await fetch('/api/send-to/' + encodeURIComponent(peerId), {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.error || 'Relay send failed');
+        }
+
+        UI.toast('Files sent to ' + peerName + '!', 'success');
     },
 
     async uploadToServer(files) {
