@@ -6,3 +6,21 @@ certs/
 *.test
 *.out
 .DS_Store
+
+# Keystore (secrets)
+*.jks
+keystore.properties
+
+# Python venv
+clients/python/venv/
+
+# Android build
+clients/android/.gradle/
+clients/android/build/
+clients/android/app/build/
+clients/android/local.properties
+
+# Distribution
+dist/macos/gosling-client.py
+dist/*.zip
+*.apk

@@ -255,7 +255,37 @@ Priority: CLI flags > environment variables > config file > defaults.
 
 go-sling includes companion clients that run in the background and **automatically receive files** — no manual download needed. Files are saved to a configured directory and ZIP archives are auto-extracted.
 
-### Python CLI (macOS / Windows / Linux)
+### macOS One-Click Installer
+
+Download `gosling-receiver-macos.zip` from the [Releases](https://github.com/pepperonas/go-sling/releases) page, unzip, and run:
+
+```bash
+cd macos
+# Edit config.json with your server address and PIN, then:
+bash install.sh
+```
+
+This will:
+1. Install the Python client to `~/.gosling/`
+2. Create a virtual environment with all dependencies
+3. Register a **LaunchAgent** that auto-starts on login
+4. Start receiving immediately
+
+```bash
+# View live logs
+tail -f ~/.gosling/gosling.log
+
+# Stop/Start
+launchctl unload ~/Library/LaunchAgents/io.celox.gosling-receiver.plist
+launchctl load ~/Library/LaunchAgents/io.celox.gosling-receiver.plist
+
+# Uninstall completely
+bash ~/.gosling/uninstall.sh
+```
+
+Files are saved to `~/go-sling-received/` by default (configurable in `config.json`).
+
+### Python CLI (Manual Setup)
 
 ```bash
 cd clients/python
@@ -285,20 +315,24 @@ The client connects as a **headless peer** — it appears in the browser's peer 
 
 ### Android App
 
-The Android app (`clients/android/`) provides the same auto-receive functionality with a native UI:
+Download the signed APK from the [Releases](https://github.com/pepperonas/go-sling/releases) page, or build from source:
 
-1. Open the project in **Android Studio**
-2. Build and install on your device
-3. Enter your server address and PIN
-4. Tap **Start Receiving**
+```bash
+cd clients/android
+# Copy keystore (see KEYSTORE.md)
+./gradlew assembleRelease
+# APK: app/build/outputs/apk/release/app-release.apk
+```
+
+Install on your phone, enter your server address and PIN, tap **Start Receiving**.
 
 The app runs a foreground service that:
 - Connects as a headless peer via WebSocket
 - Auto-downloads files when they arrive
-- Extracts ZIP archives automatically
-- Shows notifications for each received file
-- Saves to `Download/go-sling/` on the device
+- Extracts ZIP archives automatically to `Download/go-sling/`
+- Shows a notification for each received file
 - Reconnects automatically on connection loss
+- Survives app close (foreground service)
 
 Settings (server, PIN, output folder) are persisted between app launches.
 

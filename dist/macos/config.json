@@ -1,0 +1,7 @@
+{
+  "server": "192.168.178.103:8420",
+  "pin": "3001",
+  "output": "~/go-sling-received",
+  "extract": true,
+  "name": ""
+}
