@@ -18,7 +18,7 @@ import (
 //go:embed web/*
 var webContent embed.FS
 
-var version = "1.0.0"
+var version = "1.0.1"
 
 func main() {
 	var (

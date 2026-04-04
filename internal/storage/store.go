@@ -86,6 +86,18 @@ func (s *Store) Save(name string, reader io.Reader, size int64) (*FileInfo, erro
 		return nil, fmt.Errorf("file too large: %d > %d", size, s.maxSize)
 	}
 
+	// Remove existing file with same name (overwrite)
+	s.mu.RLock()
+	for id, existing := range s.files {
+		if existing.Name == name {
+			s.mu.RUnlock()
+			s.Delete(id)
+			s.mu.RLock()
+			break
+		}
+	}
+	s.mu.RUnlock()
+
 	id := generateID()
 	dirPath := filepath.Join(s.dataDir, id)
 	if err := os.MkdirAll(dirPath, 0755); err != nil {
