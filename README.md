@@ -1,5 +1,21 @@
 # go-sling
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go version">
+  <img src="https://img.shields.io/github/license/pepperonas/go-sling?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/platform-Linux-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Platform">
+  <img src="https://img.shields.io/badge/arch-ARM64%20%7C%20amd64-blue?style=flat-square" alt="Architecture">
+  <img src="https://img.shields.io/github/last-commit/pepperonas/go-sling?style=flat-square" alt="Last Commit">
+  <img src="https://img.shields.io/github/repo-size/pepperonas/go-sling?style=flat-square" alt="Repo Size">
+  <img src="https://img.shields.io/github/stars/pepperonas/go-sling?style=flat-square" alt="Stars">
+  <img src="https://img.shields.io/github/issues/pepperonas/go-sling?style=flat-square" alt="Issues">
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs Welcome">
+  <img src="https://goreportcard.com/badge/github.com/pepperonas/go-sling?style=flat-square" alt="Go Report Card">
+  <img src="https://img.shields.io/badge/built%20with-Go-00ADD8?style=flat-square&logo=go" alt="Built with Go">
+  <img src="https://img.shields.io/badge/self--hosted-✓-success?style=flat-square" alt="Self-hosted">
+  <img src="https://img.shields.io/badge/maintained-yes-brightgreen?style=flat-square" alt="Maintained">
+</p>
+
 <div align="center">
 
 <img src="web/assets/banner.png" alt="go-sling banner" width="100%">
@@ -560,6 +576,23 @@ go-sling/
 | ZIP | Custom client-side ZIP builder (STORE method, CRC-32) |
 | Python Client | `websockets` (async) or `websocket-client` (sync) |
 | Android App | Kotlin, Material 3, [Java-WebSocket](https://github.com/TooTallNate/Java-WebSocket) |
+
+## Tests
+
+The project includes unit tests for pure logic functions — no network, disk I/O, or goroutines required.
+
+```bash
+go test ./...
+```
+
+### Test coverage
+
+| File | Package | What's tested |
+|------|---------|---------------|
+| `internal/storage/store_test.go` | `storage` | Path sanitization: traversal rejection, valid paths, edge cases |
+| `internal/api/status_test.go` | `api` | Uptime formatting: days+hours+minutes, hours+minutes, minutes-only |
+| `internal/config/config_test.go` | `config` | Config defaults, Addr() formatting, RetentionDuration() parsing |
+| `internal/ws/client_test.go` | `ws` | Client name format (Adjective-Noun-hex), client ID length and charset |
 
 ## License
 
